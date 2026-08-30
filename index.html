@@ -18,10 +18,13 @@
     --ink-soft: #3F3F3F;
     --ink-muted: #808080;
     --rule: #E8E5DC;
-    --accent: #F5C518;      /* signature yellow */
-    --accent-deep: #D9A800; /* hover/press yellow */
+    --accent: #F5C518;
+    --accent-deep: #D9A800;
     --accent-soft: #FFF5C2;
+    --shadow-sm: 0 1px 2px rgba(10,10,10,.04);
     --shadow: 0 1px 2px rgba(10,10,10,.04), 0 12px 32px rgba(10,10,10,.08);
+    --shadow-lg: 0 4px 8px rgba(10,10,10,.06), 0 24px 48px rgba(10,10,10,.12);
+    --ease: cubic-bezier(.22,1,.36,1);
   }
   [data-theme="dark"] {
     --bg: #0A0A0A;
@@ -33,7 +36,9 @@
     --accent: #F5C518;
     --accent-deep: #FFD84D;
     --accent-soft: #2A2410;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+    --shadow-lg: 0 4px 8px rgba(0,0,0,.5), 0 24px 48px rgba(0,0,0,.7);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,9 +53,36 @@
     transition: background .3s ease, color .3s ease;
     overflow-x: hidden;
   }
+
+  /* ─── Reveal on scroll ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .8s var(--ease), transform .8s var(--ease);
+    will-change: opacity, transform;
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .7s var(--ease), transform .7s var(--ease);
+  }
+  .reveal-stagger.in > *:nth-child(1) { transition-delay: .05s; }
+  .reveal-stagger.in > *:nth-child(2) { transition-delay: .15s; }
+  .reveal-stagger.in > *:nth-child(3) { transition-delay: .25s; }
+  .reveal-stagger.in > *:nth-child(4) { transition-delay: .35s; }
+  .reveal-stagger.in > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
     html { scroll-behavior: auto; }
+    .reveal, .reveal-stagger > * { opacity: 1; transform: none; }
   }
 
   .wrap {
@@ -60,8 +92,17 @@
     margin: 0 auto;
     padding: 0 32px;
   }
-  @media (max-width: 640px) {
-    .wrap { padding: 0 20px; }
+  @media (max-width: 640px) { .wrap { padding: 0 20px; } }
+
+  /* ─── Scroll progress bar ─── */
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: var(--accent);
+    z-index: 100;
+    transition: width .1s linear;
   }
 
   /* ─── Typography ─── */
@@ -119,10 +160,10 @@
     font-family: 'Fraunces', serif;
     font-size: .82rem;
     font-weight: 600;
+    transition: transform .3s var(--ease);
   }
-  .nav-controls {
-    display: flex; gap: 8px; align-items: center;
-  }
+  .brand:hover .brand-mono { transform: rotate(-8deg) scale(1.05); }
+  .nav-controls { display: flex; gap: 8px; align-items: center; }
   .btn-icon {
     background: transparent;
     border: 1px solid var(--rule);
@@ -140,12 +181,13 @@
   .btn-icon:hover {
     border-color: var(--ink);
     background: var(--accent-soft);
+    transform: translateY(-1px);
   }
   .btn-icon svg { width: 14px; height: 14px; }
 
   /* ─── Hero ─── */
   header.hero {
-    padding: 80px 0 90px;
+    padding: 80px 0 60px;
     border-bottom: 1px solid var(--rule);
     position: relative;
   }
@@ -182,6 +224,12 @@
     background: var(--accent);
     z-index: -1;
     opacity: .85;
+    transform-origin: left;
+    animation: highlightIn 1s var(--ease) .5s both;
+  }
+  @keyframes highlightIn {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
   }
   .hero-lede {
     font-size: clamp(1rem, 1.35vw, 1.15rem);
@@ -204,7 +252,9 @@
     background: var(--accent);
     border-radius: 4px;
     z-index: 0;
+    transition: transform .6s var(--ease);
   }
+  .portrait-wrap:hover .portrait-bg { transform: translate(-8px, 8px); }
   .portrait {
     position: relative;
     z-index: 1;
@@ -215,7 +265,9 @@
     border-radius: 4px;
     box-shadow: var(--shadow);
     filter: contrast(1.02);
+    transition: transform .6s var(--ease);
   }
+  .portrait-wrap:hover .portrait { transform: translate(4px, -4px); }
   .portrait-tag {
     position: absolute;
     bottom: -12px; left: -12px;
@@ -231,9 +283,44 @@
   }
 
   @media (max-width: 820px) {
-    header.hero { padding: 50px 0 70px; }
+    header.hero { padding: 50px 0 50px; }
     .hero-grid { grid-template-columns: 1fr; gap: 48px; }
     .portrait-wrap { max-width: 300px; }
+  }
+
+  /* ─── Highlights strip ─── */
+  .highlights {
+    padding: 32px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .highlights-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+  .highlight .num {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 500;
+    letter-spacing: -.02em;
+    line-height: 1;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .highlight .num em {
+    font-style: italic;
+    color: var(--accent-deep);
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+  .highlight .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  @media (max-width: 720px) {
+    .highlights-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
   }
 
   /* ─── Sections ─── */
@@ -274,7 +361,6 @@
     background: linear-gradient(180deg, transparent 65%, var(--accent) 65%, var(--accent) 90%, transparent 90%);
     padding: 0 4px;
   }
-
   @media (max-width: 820px) {
     .section-head { grid-template-columns: 1fr; gap: 12px; margin-bottom: 36px; }
   }
@@ -303,6 +389,7 @@
     gap: 48px;
     padding: 32px 0;
     border-top: 1px solid var(--rule);
+    transition: background .3s;
   }
   .row:first-of-type { border-top: none; padding-top: 0; }
   .row .when {
@@ -358,7 +445,7 @@
     border: 1px solid var(--rule);
     padding: 32px;
     border-radius: 4px;
-    transition: transform .2s, box-shadow .2s, border-color .2s;
+    transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
     position: relative;
   }
   .duty::before {
@@ -367,12 +454,14 @@
     top: 0; left: 0;
     width: 40px; height: 4px;
     background: var(--accent);
+    transition: width .3s var(--ease);
   }
   .duty:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
     border-color: var(--ink);
   }
+  .duty:hover::before { width: 80px; }
   .duty .duty-num {
     font-family: 'JetBrains Mono', monospace;
     font-size: .72rem;
@@ -405,11 +494,9 @@
     width: 10px; height: 2px;
     background: var(--accent);
   }
-  @media (max-width: 720px) {
-    .duties { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 720px) { .duties { grid-template-columns: 1fr; } }
 
-  /* ─── Speaking (featured event card) ─── */
+  /* ─── Featured speaking card ─── */
   .speaking-card {
     background: var(--ink);
     color: var(--bg);
@@ -421,6 +508,12 @@
     align-items: center;
     position: relative;
     overflow: hidden;
+    margin-bottom: 48px;
+    transition: transform .4s var(--ease), box-shadow .4s var(--ease);
+  }
+  .speaking-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
   }
   .speaking-card::before {
     content: "";
@@ -430,7 +523,9 @@
     background: var(--accent);
     border-radius: 50%;
     opacity: .15;
+    transition: transform .6s var(--ease);
   }
+  .speaking-card:hover::before { transform: scale(1.3); }
   .speaking-card .badge {
     display: inline-block;
     background: var(--accent);
@@ -469,7 +564,6 @@
   .speaking-card .role-name {
     font-family: 'Fraunces', serif;
     font-size: 1.1rem;
-    margin-bottom: 20px;
   }
   .event-meta {
     display: grid;
@@ -511,6 +605,198 @@
     .speaking-card { grid-template-columns: 1fr; padding: 32px 24px; gap: 28px; }
   }
 
+  /* ─── Past events list ─── */
+  .past-events-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 20px;
+    padding-left: 200px;
+  }
+  @media (max-width: 820px) { .past-events-title { padding-left: 0; } }
+
+  .paper {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 48px;
+    padding: 24px 0;
+    border-top: 1px solid var(--rule);
+    align-items: start;
+    transition: background .3s;
+  }
+  .paper:hover { background: var(--accent-soft); }
+  .paper .when {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    color: var(--ink-muted);
+    letter-spacing: .05em;
+    padding-top: 4px;
+  }
+  .paper .what h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 6px;
+    letter-spacing: -.01em;
+  }
+  .paper .what .event-name {
+    font-size: .92rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-bottom: 4px;
+  }
+  .paper .what .paper-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent-deep);
+    font-weight: 600;
+  }
+  .paper .tag {
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    align-self: center;
+    white-space: nowrap;
+  }
+  @media (max-width: 820px) {
+    .paper { grid-template-columns: 1fr; gap: 6px; padding: 20px 0; }
+    .paper .tag { justify-self: start; margin-top: 8px; }
+  }
+
+  /* ─── Certifications ─── */
+  .cert-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .cert {
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
+  }
+  .cert:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--ink);
+  }
+  .cert .cert-icon {
+    width: 48px; height: 48px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    display: grid; place-items: center;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+  .cert .cert-icon svg { width: 22px; height: 22px; }
+  .cert .cert-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+  .cert h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    letter-spacing: -.01em;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .cert .issuer {
+    font-size: .9rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-bottom: 20px;
+  }
+  .cert .cert-body {
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .score-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .score-strip .item {
+    background: var(--bg);
+    padding: 12px;
+    border-radius: 4px;
+    text-align: center;
+    border: 1px solid var(--rule);
+  }
+  .score-strip .item .n {
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .score-strip .item .l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .58rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    line-height: 1.3;
+  }
+  .total-score {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 4px;
+  }
+  .total-score .l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .total-score .n {
+    font-family: 'Fraunces', serif;
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .cefr-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--ink);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .1em;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .cert p.cert-desc {
+    font-size: .93rem;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  @media (max-width: 720px) { .cert-grid { grid-template-columns: 1fr; } }
+
   /* ─── Research links grid ─── */
   .link-grid {
     display: grid;
@@ -524,7 +810,7 @@
     border: 1px solid var(--rule);
     border-radius: 4px;
     border-bottom: 1px solid var(--rule);
-    transition: all .2s;
+    transition: all .3s var(--ease);
     text-decoration: none;
     position: relative;
     overflow: hidden;
@@ -537,12 +823,13 @@
     background: var(--accent);
     transform: scaleY(0);
     transform-origin: bottom;
-    transition: transform .25s;
+    transition: transform .3s var(--ease);
   }
   .link-card:hover {
     border-color: var(--ink);
     color: var(--ink);
     padding-left: 34px;
+    box-shadow: var(--shadow);
   }
   .link-card:hover::before { transform: scaleY(1); }
   .link-card .lbl {
@@ -561,12 +848,10 @@
   .link-card .arrow {
     font-size: 1.3rem;
     color: var(--ink);
-    transition: transform .2s;
+    transition: transform .3s var(--ease);
   }
   .link-card:hover .arrow { transform: translate(4px, -4px); color: var(--accent-deep); }
-  @media (max-width: 640px) {
-    .link-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 640px) { .link-grid { grid-template-columns: 1fr; } }
 
   /* ─── Contact ─── */
   .contact-cta {
@@ -587,9 +872,7 @@
     background: linear-gradient(180deg, transparent 65%, var(--accent) 65%, var(--accent) 90%, transparent 90%);
     padding: 0 4px;
   }
-  .contact-actions {
-    display: flex; flex-wrap: wrap; gap: 12px;
-  }
+  .contact-actions { display: flex; flex-wrap: wrap; gap: 12px; }
   .btn-primary {
     display: inline-flex; align-items: center; gap: 10px;
     padding: 14px 24px;
@@ -600,7 +883,7 @@
     font-family: 'Inter', sans-serif;
     font-size: .95rem;
     font-weight: 600;
-    transition: all .2s;
+    transition: all .3s var(--ease);
     cursor: pointer;
     border-bottom: none;
   }
@@ -608,6 +891,7 @@
     background: var(--ink);
     color: var(--accent);
     transform: translateY(-2px);
+    box-shadow: var(--shadow);
   }
   .btn-secondary {
     display: inline-flex; align-items: center; gap: 10px;
@@ -619,16 +903,15 @@
     font-family: 'Inter', sans-serif;
     font-size: .95rem;
     font-weight: 500;
-    transition: all .2s;
+    transition: all .3s var(--ease);
     border-bottom: 1px solid var(--ink);
   }
   .btn-secondary:hover {
     background: var(--ink);
     color: var(--bg);
+    transform: translateY(-2px);
   }
-  @media (max-width: 820px) {
-    .contact-cta { grid-template-columns: 1fr; gap: 12px; }
-  }
+  @media (max-width: 820px) { .contact-cta { grid-template-columns: 1fr; gap: 12px; } }
 
   /* ─── Footer ─── */
   footer {
@@ -664,6 +947,8 @@
 </style>
 </head>
 <body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
 
 <nav>
   <div class="nav-inner">
@@ -712,18 +997,41 @@
     </div>
   </header>
 
+  <!-- ─── HIGHLIGHTS STRIP ─── -->
+  <div class="highlights reveal reveal-stagger">
+    <div class="highlights-grid">
+      <div class="highlight">
+        <div class="num"><em>7</em>+</div>
+        <div class="lbl" data-lang="id">Tahun Mengajar</div>
+        <div class="lbl" data-lang="en">Years Teaching</div>
+      </div>
+      <div class="highlight">
+        <div class="num"><em>3</em></div>
+        <div class="lbl" data-lang="id">Makalah Seminar</div>
+        <div class="lbl" data-lang="en">Conference Papers</div>
+      </div>
+      <div class="highlight">
+        <div class="num"><em>557</em></div>
+        <div class="lbl">TOEFL ITP · B2</div>
+      </div>
+      <div class="highlight">
+        <div class="num"><em>2</em></div>
+        <div class="lbl" data-lang="id">Sertifikasi Profesional</div>
+        <div class="lbl" data-lang="en">Professional Certifications</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── ABOUT ─── -->
   <section id="about">
-    <div class="section-head">
-      <div>
-        <div class="section-num">01 / <span data-lang="id">Profil</span><span data-lang="en">Profile</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">01 / <span data-lang="id">Profil</span><span data-lang="en">Profile</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Sekilas <em>tentang saya.</em></span>
         <span data-lang="en">A brief <em>introduction.</em></span>
       </h2>
     </div>
-    <div class="about-body">
+    <div class="about-body reveal">
       <div></div>
       <div>
         <p data-lang="id">
@@ -744,82 +1052,94 @@
 
   <!-- ─── EDUCATION ─── -->
   <section id="education">
-    <div class="section-head">
-      <div>
-        <div class="section-num">02 / <span data-lang="id">Pendidikan</span><span data-lang="en">Education</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">02 / <span data-lang="id">Pendidikan</span><span data-lang="en">Education</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Jejak <em>akademik.</em></span>
         <span data-lang="en">Academic <em>background.</em></span>
       </h2>
     </div>
 
-    <div class="row">
-      <div class="when">2024 — <span data-lang="id">Sekarang</span><span data-lang="en">Present</span></div>
-      <div class="what">
-        <h3 data-lang="id">Magister Pendidikan Sains</h3>
-        <h3 data-lang="en">Master of Science Education</h3>
-        <div class="institution">Universitas Negeri Surabaya (UNESA)</div>
-        <p data-lang="id">Fokus riset pada pengembangan Learning Management System terintegrasi Problem Based Learning berbantuan chatbot untuk pembelajaran IPA SMP.</p>
-        <p data-lang="en">Research focus on developing a Learning Management System integrated with chatbot-assisted Problem Based Learning for junior high science education.</p>
+    <div class="reveal">
+      <div class="row">
+        <div class="when">2024 — <span data-lang="id">Sekarang</span><span data-lang="en">Present</span></div>
+        <div class="what">
+          <h3 data-lang="id">Magister Pendidikan Sains</h3>
+          <h3 data-lang="en">Master of Science Education</h3>
+          <div class="institution">Universitas Negeri Surabaya (UNESA)</div>
+          <p data-lang="id">Fokus riset pada pengembangan Learning Management System terintegrasi Problem Based Learning berbantuan chatbot untuk pembelajaran IPA SMP.</p>
+          <p data-lang="en">Research focus on developing a Learning Management System integrated with chatbot-assisted Problem Based Learning for junior high science education.</p>
+        </div>
       </div>
-    </div>
-
-    <div class="row">
-      <div class="when">2014 — 2018</div>
-      <div class="what">
-        <h3 data-lang="id">Sarjana Pendidikan Fisika</h3>
-        <h3 data-lang="en">Bachelor of Physics Education</h3>
-        <div class="institution">Universitas Negeri Surabaya (UNESA)</div>
-        <p data-lang="id">Program studi Pendidikan Fisika, Fakultas Matematika dan Ilmu Pengetahuan Alam.</p>
-        <p data-lang="en">Physics Education program, Faculty of Mathematics and Natural Sciences.</p>
+      <div class="row">
+        <div class="when">2014 — 2018</div>
+        <div class="what">
+          <h3 data-lang="id">Sarjana Pendidikan Fisika</h3>
+          <h3 data-lang="en">Bachelor of Physics Education</h3>
+          <div class="institution">Universitas Negeri Surabaya (UNESA)</div>
+          <p data-lang="id">Program studi Pendidikan Fisika, Fakultas Matematika dan Ilmu Pengetahuan Alam.</p>
+          <p data-lang="en">Physics Education program, Faculty of Mathematics and Natural Sciences.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ─── EXPERIENCE ─── -->
   <section id="experience">
-    <div class="section-head">
-      <div>
-        <div class="section-num">03 / <span data-lang="id">Pengalaman</span><span data-lang="en">Experience</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">03 / <span data-lang="id">Pengalaman</span><span data-lang="en">Experience</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Pengalaman <em>profesional.</em></span>
         <span data-lang="en">Professional <em>experience.</em></span>
       </h2>
     </div>
 
-    <div class="row">
-      <div class="when">2018 — <span data-lang="id">Sekarang</span><span data-lang="en">Present</span></div>
-      <div class="what">
-        <h3 data-lang="id">Guru Tetap Yayasan &amp; Anggota Tim Kurikulum</h3>
-        <h3 data-lang="en">Permanent Teacher &amp; Curriculum Team Member</h3>
-        <div class="institution">SMP NU Bahrul Ulum, Yayasan Pendidikan NU Bahrul Ulum · Menganti, Gresik</div>
-        <ul>
-          <li data-lang="id">Mengampu mata pelajaran IPA untuk kelas 7, 8, dan 9.</li>
-          <li data-lang="en">Teaching integrated science for grades 7, 8, and 9.</li>
-          <li data-lang="id">Menjadi bagian tim kurikulum SMP yang menyusun dokumen kurikulum, panduan asesmen, dan program supervisi akademik.</li>
-          <li data-lang="en">Serving on the junior high curriculum team responsible for curriculum documents, assessment guidelines, and academic supervision programs.</li>
-          <li data-lang="id">Terlibat dalam perencanaan dan pelaksanaan kegiatan akademik sekolah sepanjang tahun ajaran.</li>
-          <li data-lang="en">Involved in planning and running academic programs throughout the school year.</li>
-        </ul>
+    <div class="reveal">
+      <div class="row">
+        <div class="when">2018 — <span data-lang="id">Sekarang</span><span data-lang="en">Present</span></div>
+        <div class="what">
+          <h3 data-lang="id">Guru Tetap Yayasan &amp; Anggota Tim Kurikulum</h3>
+          <h3 data-lang="en">Permanent Teacher &amp; Curriculum Team Member</h3>
+          <div class="institution">SMP NU Bahrul Ulum, Yayasan Pendidikan NU Bahrul Ulum · Menganti, Gresik</div>
+          <ul>
+            <li data-lang="id">Mengampu mata pelajaran IPA untuk kelas 7, 8, dan 9.</li>
+            <li data-lang="en">Teaching integrated science for grades 7, 8, and 9.</li>
+            <li data-lang="id">Menjadi bagian tim kurikulum SMP yang menyusun dokumen kurikulum, panduan asesmen, dan program supervisi akademik.</li>
+            <li data-lang="en">Serving on the junior high curriculum team responsible for curriculum documents, assessment guidelines, and academic supervision programs.</li>
+            <li data-lang="id">Terlibat dalam perencanaan dan pelaksanaan kegiatan akademik sekolah sepanjang tahun ajaran.</li>
+            <li data-lang="en">Involved in planning and running academic programs throughout the school year.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="when">2018</div>
+        <div class="what">
+          <h3 data-lang="id">Asisten Laboratorium Fisika Dasar</h3>
+          <h3 data-lang="en">Basic Physics Laboratory Assistant</h3>
+          <div class="institution">Jurusan Fisika, FMIPA · Universitas Negeri Surabaya</div>
+          <ul>
+            <li data-lang="id">Mendampingi mahasiswa dalam kegiatan praktikum Fisika Dasar di Unit Laboratorium Jurusan Fisika UNESA.</li>
+            <li data-lang="en">Guided undergraduate students through Basic Physics laboratory sessions at the UNESA Physics Department laboratory unit.</li>
+            <li data-lang="id">Membantu penyiapan alat, bahan, dan prosedur eksperimen serta pelaporan hasil praktikum.</li>
+            <li data-lang="en">Assisted with the preparation of equipment, materials, and experimental procedures, as well as practicum reporting.</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ─── DUTIES ─── -->
   <section id="duties">
-    <div class="section-head">
-      <div>
-        <div class="section-num">04 / <span data-lang="id">Uraian Tugas</span><span data-lang="en">Roles &amp; Duties</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">04 / <span data-lang="id">Uraian Tugas</span><span data-lang="en">Roles &amp; Duties</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Dua peran, <em>satu misi.</em></span>
         <span data-lang="en">Two roles, <em>one mission.</em></span>
       </h2>
     </div>
 
-    <div class="duties">
+    <div class="duties reveal reveal-stagger">
       <article class="duty">
         <div class="duty-num" data-lang="id">A · Guru IPA SMP</div>
         <div class="duty-num" data-lang="en">A · Junior High Science Teacher</div>
@@ -868,90 +1188,172 @@
     </div>
   </section>
 
-  <!-- ─── SPEAKING ─── -->
+  <!-- ─── SPEAKING & PAPERS ─── -->
   <section id="speaking">
-    <div class="section-head">
-      <div>
-        <div class="section-num">05 / <span data-lang="id">Pembicara</span><span data-lang="en">Speaking</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">05 / <span data-lang="id">Pembicara &amp; Makalah</span><span data-lang="en">Speaking &amp; Papers</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Berbagi <em>gagasan.</em></span>
         <span data-lang="en">Sharing <em>ideas.</em></span>
       </h2>
     </div>
 
-    <div class="speaking-card">
-      <div>
-        <span class="badge" data-lang="id">Webinar Nasional · 2025</span>
-        <span class="badge" data-lang="en">National Webinar · 2025</span>
-        <h3 data-lang="id">Pembelajaran STEM pada Isu Lokal</h3>
-        <h3 data-lang="en">STEM on Local Problem-Based Projects</h3>
-        <p class="subtitle" data-lang="id">Kolaborasi cerdas solusi pembelajaran STEM pada Fase D dan E · Berpikir global, bertindak lokal.</p>
-        <p class="subtitle" data-lang="en">Smart collaboration for STEM learning solutions in Phases D and E · Think global, act local.</p>
-        <div class="role" data-lang="id">Peran</div>
-        <div class="role" data-lang="en">Role</div>
-        <div class="role-name" data-lang="id">Pembicara — mewakili SMP NU Bahrul Ulum</div>
-        <div class="role-name" data-lang="en">Speaker — representing SMP NU Bahrul Ulum</div>
-      </div>
-      <div class="event-meta">
-        <div class="item">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-          <div>
-            <div class="lbl" data-lang="id">Tanggal</div>
-            <div class="lbl" data-lang="en">Date</div>
-            <div class="val" data-lang="id">Jumat, 5 Desember 2025</div>
-            <div class="val" data-lang="en">Friday, 5 December 2025</div>
-          </div>
+    <div class="reveal">
+      <div class="speaking-card">
+        <div>
+          <span class="badge" data-lang="id">Webinar Nasional · 2025</span>
+          <span class="badge" data-lang="en">National Webinar · 2025</span>
+          <h3 data-lang="id">Pembelajaran STEM pada Isu Lokal</h3>
+          <h3 data-lang="en">STEM on Local Problem-Based Projects</h3>
+          <p class="subtitle" data-lang="id">Kolaborasi cerdas solusi pembelajaran STEM pada Fase D dan E · Berpikir global, bertindak lokal.</p>
+          <p class="subtitle" data-lang="en">Smart collaboration for STEM learning solutions in Phases D and E · Think global, act local.</p>
+          <div class="role" data-lang="id">Peran</div>
+          <div class="role" data-lang="en">Role</div>
+          <div class="role-name" data-lang="id">Pembicara — mewakili SMP NU Bahrul Ulum</div>
+          <div class="role-name" data-lang="en">Speaker — representing SMP NU Bahrul Ulum</div>
         </div>
-        <div class="item">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div class="event-meta">
+          <div class="item">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div>
+              <div class="lbl" data-lang="id">Tanggal</div>
+              <div class="lbl" data-lang="en">Date</div>
+              <div class="val" data-lang="id">Jumat, 5 Desember 2025</div>
+              <div class="val" data-lang="en">Friday, 5 December 2025</div>
+            </div>
           </div>
-          <div>
-            <div class="lbl" data-lang="id">Waktu</div>
-            <div class="lbl" data-lang="en">Time</div>
-            <div class="val">14:00 — 16:00 WIB</div>
+          <div class="item">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div>
+              <div class="lbl" data-lang="id">Waktu</div>
+              <div class="lbl" data-lang="en">Time</div>
+              <div class="val">14:00 — 16:00 WIB</div>
+            </div>
           </div>
-        </div>
-        <div class="item">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <div class="item">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+            <div>
+              <div class="lbl" data-lang="id">Platform</div>
+              <div class="lbl" data-lang="en">Platform</div>
+              <div class="val">Zoom Meeting</div>
+            </div>
           </div>
-          <div>
-            <div class="lbl" data-lang="id">Platform</div>
-            <div class="lbl" data-lang="en">Platform</div>
-            <div class="val">Zoom Meeting</div>
-          </div>
-        </div>
-        <div class="item">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div>
-            <div class="lbl" data-lang="id">Penyelenggara</div>
-            <div class="lbl" data-lang="en">Organizers</div>
-            <div class="val">UNESA &amp; MGMP IPA Kota Surabaya</div>
+          <div class="item">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div>
+              <div class="lbl" data-lang="id">Penyelenggara</div>
+              <div class="lbl" data-lang="en">Organizers</div>
+              <div class="val">UNESA &amp; MGMP IPA Kota Surabaya</div>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="past-events-title" data-lang="id">Makalah &amp; Seminar Sebelumnya</div>
+      <div class="past-events-title" data-lang="en">Previous Papers &amp; Seminars</div>
+
+      <div class="paper">
+        <div class="when">11 <span data-lang="id">Agustus</span><span data-lang="en">August</span> 2018</div>
+        <div class="what">
+          <h4 data-lang="id">Pengembangan Game Visual Novel Fisika Menggunakan Software Novelty untuk Melatihkan Keterampilan Berpikir Kritis</h4>
+          <h4 data-lang="en">Development of a Physics Visual Novel Game Using Novelty Software to Train Critical Thinking Skills</h4>
+          <div class="event-name" data-lang="id">Seminar Nasional Fisika 2018 · "Membumikan Fisika dan Pembelajaran Fisika dalam Membangun Kearifan Global"</div>
+          <div class="event-name" data-lang="en">National Physics Seminar 2018 · "Grounding Physics and Physics Learning in Building Global Wisdom"</div>
+          <div class="paper-role" data-lang="id">Pemakalah · Jurusan Fisika FMIPA UNESA</div>
+          <div class="paper-role" data-lang="en">Presenter · Physics Department, FMIPA UNESA</div>
+        </div>
+        <span class="tag">SNF 055/2018</span>
+      </div>
+
+      <div class="paper">
+        <div class="when">25 <span data-lang="id">November</span><span data-lang="en">November</span> 2017</div>
+        <div class="what">
+          <h4 data-lang="id">Efektivitas Penggunaan Visual Novel untuk Melatihkan Keterampilan Berpikir Kritis</h4>
+          <h4 data-lang="en">The Effectiveness of Visual Novels in Training Critical Thinking Skills</h4>
+          <div class="event-name" data-lang="id">Seminar Nasional Fisika 2017 · "Menghilirkan Penelitian-Penelitian Fisika dan Pembelajarannya"</div>
+          <div class="event-name" data-lang="en">National Physics Seminar 2017 · "Bringing Physics Research and Learning to Practice"</div>
+          <div class="paper-role" data-lang="id">Pemakalah · Jurusan Fisika FMIPA UNESA</div>
+          <div class="paper-role" data-lang="en">Presenter · Physics Department, FMIPA UNESA</div>
+        </div>
+        <span class="tag">SNF 020/2017</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CERTIFICATIONS & LANGUAGES ─── -->
+  <section id="certifications">
+    <div class="section-head reveal">
+      <div><div class="section-num">06 / <span data-lang="id">Sertifikasi &amp; Bahasa</span><span data-lang="en">Certifications &amp; Languages</span></div></div>
+      <h2 class="section-title">
+        <span data-lang="id">Kualifikasi <em>tambahan.</em></span>
+        <span data-lang="en">Additional <em>credentials.</em></span>
+      </h2>
+    </div>
+
+    <div class="cert-grid reveal reveal-stagger">
+      <article class="cert">
+        <div class="cert-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="cert-type" data-lang="id">Sertifikasi Profesional</div>
+        <div class="cert-type" data-lang="en">Professional Certification</div>
+        <h4>Gemini Educator</h4>
+        <div class="issuer" data-lang="id">Google · Program pemanfaatan Gemini untuk pendidik</div>
+        <div class="issuer" data-lang="en">Google · Program on using Gemini for educators</div>
+        <div class="cert-body">
+          <p class="cert-desc" data-lang="id">Kualifikasi sebagai pendidik yang mampu memanfaatkan Gemini secara bertanggung jawab untuk mendukung perancangan pembelajaran, pembuatan materi ajar, dan diferensiasi asesmen di kelas.</p>
+          <p class="cert-desc" data-lang="en">Qualified as an educator capable of using Gemini responsibly to support lesson design, teaching material development, and assessment differentiation in the classroom.</p>
+        </div>
+      </article>
+
+      <article class="cert">
+        <div class="cert-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <div class="cert-type" data-lang="id">Kemampuan Bahasa Inggris</div>
+        <div class="cert-type" data-lang="en">English Proficiency</div>
+        <h4>TOEFL ITP Level 1</h4>
+        <div class="issuer" data-lang="id">ILP Cikini · 13 Februari 2026</div>
+        <div class="issuer" data-lang="en">ILP Cikini · 13 February 2026</div>
+        <div class="cert-body">
+          <div class="score-strip">
+            <div class="item">
+              <div class="n">55</div>
+              <div class="l" data-lang="id">Listening</div>
+              <div class="l" data-lang="en">Listening</div>
+            </div>
+            <div class="item">
+              <div class="n">54</div>
+              <div class="l" data-lang="id">Structure</div>
+              <div class="l" data-lang="en">Structure</div>
+            </div>
+            <div class="item">
+              <div class="n">58</div>
+              <div class="l" data-lang="id">Reading</div>
+              <div class="l" data-lang="en">Reading</div>
+            </div>
+          </div>
+          <div class="total-score">
+            <span class="l" data-lang="id">Skor Total</span>
+            <span class="l" data-lang="en">Total Score</span>
+            <span><span class="n">557</span><span class="cefr-badge">B2</span></span>
+          </div>
+        </div>
+      </article>
     </div>
   </section>
 
   <!-- ─── RESEARCH ─── -->
   <section id="research">
-    <div class="section-head">
-      <div>
-        <div class="section-num">06 / <span data-lang="id">Riset &amp; Profil</span><span data-lang="en">Research &amp; Profiles</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">07 / <span data-lang="id">Riset &amp; Profil</span><span data-lang="en">Research &amp; Profiles</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Jejak riset &amp; <em>publikasi.</em></span>
         <span data-lang="en">Research &amp; <em>publications.</em></span>
       </h2>
     </div>
 
-    <div class="link-grid">
+    <div class="link-grid reveal reveal-stagger">
       <a href="https://scholar.google.com/citations?user=Yt5CN1EAAAAJ&hl=id" target="_blank" rel="noopener" class="link-card">
         <div>
           <div class="lbl">Google Scholar</div>
@@ -971,17 +1373,15 @@
 
   <!-- ─── CONTACT ─── -->
   <section id="contact" style="border-bottom:none;">
-    <div class="section-head">
-      <div>
-        <div class="section-num">07 / <span data-lang="id">Kontak</span><span data-lang="en">Contact</span></div>
-      </div>
+    <div class="section-head reveal">
+      <div><div class="section-num">08 / <span data-lang="id">Kontak</span><span data-lang="en">Contact</span></div></div>
       <h2 class="section-title">
         <span data-lang="id">Mari <em>berkolaborasi.</em></span>
         <span data-lang="en">Let's <em>collaborate.</em></span>
       </h2>
     </div>
 
-    <div class="contact-cta">
+    <div class="contact-cta reveal">
       <div></div>
       <div>
         <p class="contact-lg">
@@ -1029,7 +1429,6 @@
   const savedTheme = (() => { try { return localStorage.getItem('theme'); } catch(e) { return null; } })();
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
-
   themeBtn.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme');
     applyTheme(current === 'dark' ? 'light' : 'dark');
@@ -1043,7 +1442,6 @@
   }
   const savedLang = (() => { try { return localStorage.getItem('lang'); } catch(e) { return null; } })();
   applyLang(savedLang || 'id');
-
   langBtn.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('lang');
     applyLang(current === 'id' ? 'en' : 'id');
@@ -1051,6 +1449,30 @@
 
   // ─── Year ───
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // ─── Scroll progress bar ───
+  const progress = document.getElementById('progress');
+  function updateProgress() {
+    const h = document.documentElement;
+    const scrollTop = h.scrollTop || document.body.scrollTop;
+    const scrollHeight = h.scrollHeight - h.clientHeight;
+    const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progress.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // ─── Reveal on scroll ───
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 </script>
 
 </body>
